@@ -220,15 +220,17 @@ class AFQMC(object):
         if verbose:
             self.estimators.estimators['mixed'].print_step(comm, comm.size, 0, 1)
 
-        sum_of_weights = sum([w.weight for w in self.psi.walkers])
+        sum_of_weights = sum([w.weight*w.ot*w.phase for w in self.psi.walkers])
 
         SDW_OP = 0
         CDW_OP = 0
 
         for w in self.psi.walkers:
-            print(w)
-            rel_weight = w.weight/sum_of_weights
-            print(rel_weight)
+            print("weights:", w.weight)
+            wfac = w.weight * w.ot * w.phase
+            print(wfac)
+            rel_weight = wfac # w.weight/sum_of_weights
+            #print(rel_weight)
             wfc = w.phi
 
             wfc_up = wfc[:,:8]
@@ -298,15 +300,17 @@ class AFQMC(object):
             self.tstep += time.time() - start_step
 
         #Final
-        sum_of_weights = sum([w.weight for w in self.psi.walkers])
+        sum_of_weights = sum([w.weight*w.ot*w.phase for w in self.psi.walkers])
 
         SDW_OP = 0
         CDW_OP = 0
 
         for w in self.psi.walkers:
-            print(w)
-            rel_weight = w.weight/sum_of_weights
-            print(rel_weight)
+            print("weights:", w.weight)
+            wfac = w.weight * w.ot * w.phase
+            print(wfac)
+            rel_weight = wfac # w.weight/sum_of_weights
+            #print(rel_weight)
             wfc = w.phi
 
 
@@ -377,9 +381,11 @@ class AFQMC(object):
                 CDW_OP = 0
 
                 for w in self.psi.walkers:
-                    print(w)
-                    rel_weight = w.weight/sum_of_weights
-                    print(rel_weight)
+                    print("weights:", w.weight)
+                    wfac = w.weight * w.ot * w.phase
+                    print(wfac)
+                    rel_weight = wfac #/sum_of_weights
+                    #print(rel_weight)
                     wfc = w.phi
 
                     wfc_up = wfc[:,:8]
