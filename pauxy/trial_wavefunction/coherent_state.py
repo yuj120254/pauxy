@@ -41,7 +41,7 @@ except ModuleNotFoundError:
 
 import math
 
-@jit
+#@jit
 def gab(A, B):
     r"""One-particle Green's function.
 
@@ -77,7 +77,7 @@ def gab(A, B):
     GAB = B.dot(inv_O.dot(A.conj().T))
     return GAB
 
-@jit
+#@jit
 def local_energy_hubbard_holstein_jax(T,U,g,m,w0, G, X, Lap, Ghalf=None):
     r"""Calculate local energy of walker for the Hubbard-Hostein model.
 
@@ -132,7 +132,7 @@ def hessian_product(x, p, nbasis, nup, ndown, T, U, g, m, w0, c0):
     Hx = (gph - gmh) / (2.0 * h)
     return Hx
 
-@jit
+#@jit
 def compute_exp(Ua, tmp, theta_a):
     for i in range(1,20):#was up to 50 (jiang)
         tmp = np.einsum("ij,jk->ik", theta_a, tmp)
@@ -158,14 +158,19 @@ def compute_greens_function_from_x (x, nbasis, nup, ndown, c0, restricted):
     daib = daib.reshape((nvirb, noccb))
 
     if (restricted):
+        #daib = daia
         daib = daib.at[:,:].set(daia)
 
     theta_a = np.zeros((nbsf, nbsf),dtype=np.float64)
     theta_b = np.zeros((nbsf, nbsf),dtype=np.float64)
 
+    #theta_a[nocca:nbsf,:nocca] = daia
+    #theta_a[:nocca, nocca:nbsf] = -np.transpose(daia)
     theta_a = theta_a.at[nocca:nbsf,:nocca].set(daia)
     theta_a = theta_a.at[:nocca, nocca:nbsf].set(-np.transpose(daia))
 
+    #theta_b[noccb:nbsf,:noccb] = daib
+    #theta_b[:noccb, noccb:nbsf] = -np.transpose(daib)
     theta_b = theta_b.at[noccb:nbsf,:noccb].set(daib)
     theta_b = theta_b.at[:noccb, noccb:nbsf].set(-np.transpose(daib))
 
@@ -214,14 +219,19 @@ def objective_function (x, nbasis, nup, ndown, T, U, g, m, w0, c0, restricted, r
     daib = daib.reshape((nvirb, noccb))
 
     if (restricted):
+        #daib = daia
         daib = daib.at[:,:].set(daia)
 
     theta_a = np.zeros((nbsf, nbsf),dtype=np.float64)
     theta_b = np.zeros((nbsf, nbsf),dtype=np.float64)
 
+    #theta_a[nocca:nbsf,:nocca] = daia
+    #theta_a[:nocca, nocca:nbsf] = -np.transpose(daia)
     theta_a = theta_a.at[nocca:nbsf,:nocca].set(daia)
     theta_a = theta_a.at[:nocca, nocca:nbsf].set(-np.transpose(daia))
 
+    #theta_b[noccb:nbsf,:noccb] = daib
+    #theta_b[:noccb, noccb:nbsf] = -np.transpose(daib)
     theta_b = theta_b.at[noccb:nbsf,:noccb].set(daib)
     theta_b = theta_b.at[:noccb, noccb:nbsf].set(-np.transpose(daib))
 
@@ -246,6 +256,7 @@ def objective_function (x, nbasis, nup, ndown, T, U, g, m, w0, c0, restricted, r
     G = np.array([Ga, Gb],dtype=np.float64)
 
     if (restricted_shift):
+        #shift[:nbasis] = x[0]
         shift = shift.at[:nbasis].set(x[0])
 
     phi = HarmonicOscillator(m, w0, order=0, shift = shift)
@@ -382,11 +393,10 @@ class CoherentState(object):
 
             self.G = trial_elec.G.copy()
 
-            gup = gab(self.psi[:, :system.nup],
-                                             self.psi[:, :system.nup]).T
+            gup = gab(self.psi[:, :system.nup], self.psi[:, :system.nup]).T
+
             if (system.ndown > 0):
-                gdown = gab(self.psi[:, system.nup:],
-                                                   self.psi[:, system.nup:]).T
+                gdown = gab(self.psi[:, system.nup:], self.psi[:, system.nup:]).T
             else:
                 gdown = numpy.zeros_like(gup)
 

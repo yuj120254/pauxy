@@ -83,7 +83,7 @@ class Mixed(object):
         self.nsteps = qmc.nsteps
         self.header = ['Iteration', 'WeightFactor', 'Weight', 'ENumer',
                        'EDenom', 'ETotal', 'E1Body', 'E2Body', 'EHybrid',
-                       'Overlap']
+                       'Overlap', 'SDW_op', 'CDW_op']
         if qmc.beta is not None:
             self.thermal = True
             self.header.append('Nav')
@@ -126,6 +126,8 @@ class Mixed(object):
             'Overlap': "Walker average overlap.",
             'Nav': "Average number of electrons.",
             'Time': "Time per processor to complete one iteration.",
+            'SDW_op': "Spin Density Wave order paramter",
+            'CDW_op': "Charge Density Wave order paramter",
         }
         if root:
             self.setup_output(filename)
@@ -152,7 +154,7 @@ class Mixed(object):
             for i, w in enumerate(psi.walkers):
                 # For T > 0 w.ot = 1 always.
                 wfac = w.weight * w.ot * w.phase# * numpy.exp(w.log_detR-w.log_detR_shift)
-                print(wfac)
+                # print(wfac)
                 if step % self.energy_eval_freq == 0:
                     w.greens_function(trial)
                     if self.eval_energy:
@@ -170,6 +172,9 @@ class Mixed(object):
                 if self.thermal:
                     nav = particle_number(one_rdm_from_G(w.G))
                     self.estimates[self.names.nav] += wfac * nav
+                sdw_op, cdw_op = calculate_order_paramters(system, w.phi)
+                self.estimates[self.names.sdw] += wfac * sdw_op
+                self.estimates[self.names.cdw] += wfac * cdw_op
                 self.estimates[self.names.uweight] += w.unscaled_weight
                 self.estimates[self.names.weight] += wfac
                 self.estimates[self.names.ehyb] += wfac * w.hybrid_energy
@@ -198,6 +203,7 @@ class Mixed(object):
                         self.estimates[self.names.e1b:self.names.e2b+1] += (
                                 w.weight*numpy.array([T_sum,V_sum]).real/w.stack_length
                         )
+                        #print(1)
                     else:
                         w.greens_function(trial)
                         E, T, V = w.local_energy(system, two_rdm=self.two_rdm)
@@ -208,6 +214,7 @@ class Mixed(object):
                                 w.weight*numpy.array([T,V]).real
                         )
                         self.estimates[self.names.edenom] += w.weight
+                        #print(2)
                 else:
                     if step % self.energy_eval_freq == 0:
                         w.greens_function(trial)
@@ -220,6 +227,16 @@ class Mixed(object):
                                 w.weight*w.le_oratio*numpy.array([T,V]).real
                         )
                         self.estimates[self.names.edenom] += w.weight * w.le_oratio
+                        #print(3)
+                sdw_op, cdw_op = calculate_order_paramters(system, w.phi)
+                print("added:")
+                print(sdw_op)
+                print(cdw_op)
+                self.estimates[self.names.sdw] += w.weight * sdw_op
+                self.estimates[self.names.cdw] += w.weight * cdw_op
+                print("total")
+                print(self.estimates[self.names.sdw])
+                print(self.estimates[self.names.cdw])
                 self.estimates[self.names.uweight] += w.unscaled_weight
                 self.estimates[self.names.weight] += w.weight
                 self.estimates[self.names.ovlp] += w.weight * abs(w.ot)
@@ -273,6 +290,12 @@ class Mixed(object):
             gs[ns.nav] = gs[ns.nav] / gs[ns.weight]
         eshift = comm.bcast(eshift, root=0)
         self.eshift = eshift
+        gs[ns.sdw] = gs[ns.sdw] / gs[ns.edenom]
+        gs[ns.cdw] = gs[ns.cdw] / gs[ns.edenom]
+        print("Final_OP:")
+        print(gs[ns.sdw])
+        print(gs[ns.cdw])
+
         if comm.rank == 0:
             if self.verbose:
                 print(format_fixed_width_floats([step]+list(gs[:ns.time+1].real)))
@@ -460,7 +483,7 @@ def local_energy_multi_det_hh(system, Gi, weights, X, Lapi, two_rdm=None):
 
 def get_estimator_enum(thermal=False):
     keys = ['uweight', 'weight', 'enumer', 'edenom',
-            'eproj', 'e1b', 'e2b', 'ehyb', 'ovlp']
+            'eproj', 'e1b', 'e2b', 'ehyb', 'ovlp', 'sdw', 'cdw']
     if thermal:
         keys.append('nav')
     keys.append('time')
@@ -580,3 +603,37 @@ def variational_energy_single_det(system, psi, G=None, GH=None,
     exxb0=None,  UVT=None):
     assert len(psi.shape) == 2
     return local_energy(system, G, Ghalf=GH, rchol=rchol, eri=eri, C0=C0, ecoul0=ecoul0, exxa0=exxa0, exxb0=exxb0, UVT=UVT)
+
+def calculate_order_paramters(system, psi):
+    # Calculates the SDW and CDW order paramters
+    SDW_OP = 0
+    CDW_OP = 0
+
+    psi_up = psi[:,:8]
+    psi_down = psi[:,8:]
+    density_up = numpy.diag(psi_up.dot((psi_up.conj()).T))
+    density_down = numpy.diag(psi_down.dot((psi_down.conj()).T))
+
+    print("Up densities:", density_up)
+    print("Down densities:", density_down)
+    print("Sum of Den up", numpy.sum(numpy.sum(density_up)))
+    print("Sum of Den down", numpy.sum(numpy.sum(density_up)))
+
+    niup_final = numpy.reshape(density_up, (4, 4))
+    nidown_final = numpy.reshape(density_down, (4, 4))
+    nitotal_final = niup_final + nidown_final
+
+    for i in range(4):
+        for j in range(4):
+            SDW_OP += numpy.abs(niup_final[i,j] - nidown_final[i,j])/16
+
+    for i in range(4):
+        for j in range(4):
+            CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j])/32
+            CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4])/32
+
+
+    print("SDW order parameter:", SDW_OP)
+    print("CDW order parameter:", CDW_OP)
+ 
+    return SDW_OP, CDW_OP   
