@@ -1,6 +1,6 @@
 import numpy
 import scipy.linalg
-from pauxy.estimators.mixed import local_energy, local_energy_hh
+from pauxy.estimators.mixed import local_energy, local_energy_hh, order_parameter_hh
 from pauxy.trial_wavefunction.free_electron import FreeElectron
 from pauxy.utils.linalg import sherman_morrison
 from pauxy.walkers.stack import FieldConfig
@@ -408,3 +408,22 @@ class SingleDetWalker(Walker):
         e2b = 0.5 * (ecoul - exx)
 
         return ecoul, exxa, exxb
+
+    def order_parameters(self, system, two_rdm=None, rchol=None, eri=None, UVT=None):
+        """Compute walkers order parameters
+
+        Parameters
+        ----------
+        system : object
+            System object.
+
+        Returns
+        -------
+        (SDW_OP, CDW_OP) : tuple
+            SDW and CDW order paramtere.
+        """
+        if system.name == "HubbardHolstein":
+            return order_parameter_hh(system, self.phi)
+        else:
+            print("Order parameters only implimented for Hubbard Holsetin")
+            exit()

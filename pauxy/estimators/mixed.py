@@ -16,7 +16,7 @@ try:
 except ImportError as e:
     print(e)
 from pauxy.estimators.hubbard import local_energy_hubbard, local_energy_hubbard_ghf,\
-                                     local_energy_hubbard_holstein
+                                     local_energy_hubbard_holstein, order_parameter_hubbard_holstein
 from pauxy.estimators.greens_function import gab_mod_ovlp, gab_mod
 from pauxy.estimators.generic import (
     local_energy_generic_opt,
@@ -126,8 +126,8 @@ class Mixed(object):
             'Overlap': "Walker average overlap.",
             'Nav': "Average number of electrons.",
             'Time': "Time per processor to complete one iteration.",
-            'SDW_op': "Spin Density Wave order paramter",
-            'CDW_op': "Charge Density Wave order paramter",
+            'SDW_op': "Spin Density Wave order parameter",
+            'CDW_op': "Charge Density Wave order parameter",
         }
         if root:
             self.setup_output(filename)
@@ -164,6 +164,9 @@ class Mixed(object):
                             E, T, V = w.local_energy(system, rchol=trial._rchol, eri=trial._eri)
                     else:
                         E, T, V = 0, 0, 0
+                    sdw_op, cdw_op = w.calculate_order_parameters(system)
+                    self.estimates[self.names.sdw] += wfac * sdw_op
+                    self.estimates[self.names.cdw] += wfac * cdw_op
                     self.estimates[self.names.enumer] += wfac * E
                     self.estimates[self.names.e1b:self.names.e2b+1] += (
                             wfac * numpy.array([T,V])
@@ -172,13 +175,11 @@ class Mixed(object):
                 if self.thermal:
                     nav = particle_number(one_rdm_from_G(w.G))
                     self.estimates[self.names.nav] += wfac * nav
-                sdw_op, cdw_op = calculate_order_paramters(system, w.phi)
-                self.estimates[self.names.sdw] += wfac * sdw_op
-                self.estimates[self.names.cdw] += wfac * cdw_op
                 self.estimates[self.names.uweight] += w.unscaled_weight
                 self.estimates[self.names.weight] += wfac
                 self.estimates[self.names.ehyb] += wfac * w.hybrid_energy
                 self.estimates[self.names.ovlp] += w.weight * abs(w.ot)
+                #print(0)
         else:
             # When using importance sampling we only need to know the current
             # walkers weight as well as the local energy, the walker's overlap
@@ -198,6 +199,9 @@ class Mixed(object):
                             T_sum += T
                             V_sum += V
                             nav += particle_number(one_rdm_from_G(w.G))
+                        sdw_op, cdw_op = w.order_parameters(system)
+                        self.estimates[self.names.sdw] += w.weight * sdw_op
+                        self.estimates[self.names.cdw] += w.weight * cdw_op
                         self.estimates[self.names.nav] += w.weight * nav / w.stack_length
                         self.estimates[self.names.enumer] += w.weight*E_sum.real/w.stack_length
                         self.estimates[self.names.e1b:self.names.e2b+1] += (
@@ -208,6 +212,9 @@ class Mixed(object):
                         w.greens_function(trial)
                         E, T, V = w.local_energy(system, two_rdm=self.two_rdm)
                         nav = particle_number(one_rdm_from_G(w.G))
+                        sdw_op, cdw_op = w.order_parameters(system)
+                        self.estimates[self.names.sdw] += w.weight * sdw_op
+                        self.estimates[self.names.cdw] += w.weight * cdw_op
                         self.estimates[self.names.nav] += w.weight * nav
                         self.estimates[self.names.enumer] += w.weight*E.real
                         self.estimates[self.names.e1b:self.names.e2b+1] += (
@@ -222,21 +229,24 @@ class Mixed(object):
                             E, T, V = w.local_energy(system, rchol=trial._rchol, eri=trial._eri, UVT=trial._UVT)
                         else:
                             E, T, V = 0, 0, 0
+                        sdw_op, cdw_op = w.order_parameters(system)
+                        self.estimates[self.names.sdw] += w.weight*w.le_oratio*sdw_op
+                        self.estimates[self.names.cdw] += w.weight*w.le_oratio*cdw_op
                         self.estimates[self.names.enumer] += w.weight*w.le_oratio*E.real
                         self.estimates[self.names.e1b:self.names.e2b+1] += (
                                 w.weight*w.le_oratio*numpy.array([T,V]).real
                         )
                         self.estimates[self.names.edenom] += w.weight * w.le_oratio
-                        #print(3)
-                sdw_op, cdw_op = calculate_order_paramters(system, w.phi)
-                print("added:")
-                print(sdw_op)
-                print(cdw_op)
-                self.estimates[self.names.sdw] += w.weight * sdw_op
-                self.estimates[self.names.cdw] += w.weight * cdw_op
-                print("total")
-                print(self.estimates[self.names.sdw])
-                print(self.estimates[self.names.cdw])
+                        #print(3) ALL HERE
+                #sdw_op, cdw_op = calculate_order_parameters(system, w.phi)
+                #print("added:")
+                #print(sdw_op)
+                #print(cdw_op)
+                #self.estimates[self.names.sdw] += w.weight * sdw_op
+                #self.estimates[self.names.cdw] += w.weight * cdw_op
+                #print("total")
+                #print(self.estimates[self.names.sdw])
+                #print(self.estimates[self.names.cdw])
                 self.estimates[self.names.uweight] += w.unscaled_weight
                 self.estimates[self.names.weight] += w.weight
                 self.estimates[self.names.ovlp] += w.weight * abs(w.ot)
@@ -292,9 +302,9 @@ class Mixed(object):
         self.eshift = eshift
         gs[ns.sdw] = gs[ns.sdw] / gs[ns.edenom]
         gs[ns.cdw] = gs[ns.cdw] / gs[ns.edenom]
-        print("Final_OP:")
-        print(gs[ns.sdw])
-        print(gs[ns.cdw])
+        #print("Final_OP:")
+        #print(gs[ns.sdw])
+        #print(gs[ns.cdw])
 
         if comm.rank == 0:
             if self.verbose:
@@ -604,8 +614,19 @@ def variational_energy_single_det(system, psi, G=None, GH=None,
     assert len(psi.shape) == 2
     return local_energy(system, G, Ghalf=GH, rchol=rchol, eri=eri, C0=C0, ecoul0=ecoul0, exxa0=exxa0, exxb0=exxb0, UVT=UVT)
 
+# Order Paramter calculations for the Hubbard-Holstein model.
+def order_parameter_hh(system, Psi):
+    if system.name == "HubbardHolstein":
+        (sdw_op, cdw_op) = order_parameter_hubbard_holstein(system, Psi)
+        return (sdw_op, cdw_op)
+    else:
+        print("SOMETHING IS VERY WRONG... WHY ARE YOU CALLING HUBBARD-HOSTEIN FUNCTION?")
+        exit()
+
+# Depreciated
 def calculate_order_paramters(system, psi):
     # Calculates the SDW and CDW order paramters
+    # Not currently Used
     SDW_OP = 0
     CDW_OP = 0
 
@@ -614,10 +635,10 @@ def calculate_order_paramters(system, psi):
     density_up = numpy.diag(psi_up.dot((psi_up.conj()).T))
     density_down = numpy.diag(psi_down.dot((psi_down.conj()).T))
 
-    print("Up densities:", density_up)
-    print("Down densities:", density_down)
-    print("Sum of Den up", numpy.sum(numpy.sum(density_up)))
-    print("Sum of Den down", numpy.sum(numpy.sum(density_up)))
+    #print("Up densities:", density_up)
+    #print("Down densities:", density_down)
+    #print("Sum of Den up", numpy.sum(numpy.sum(density_up)))
+    #print("Sum of Den down", numpy.sum(numpy.sum(density_up)))
 
     niup_final = numpy.reshape(density_up, (4, 4))
     nidown_final = numpy.reshape(density_down, (4, 4))
@@ -633,7 +654,7 @@ def calculate_order_paramters(system, psi):
             CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4])/32
 
 
-    print("SDW order parameter:", SDW_OP)
-    print("CDW order parameter:", CDW_OP)
+    #print("SDW order parameter:", SDW_OP)
+    #print("CDW order parameter:", CDW_OP)
  
     return SDW_OP, CDW_OP   
