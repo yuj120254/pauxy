@@ -213,15 +213,15 @@ def fock_hubbard(system, P):
     nid = numpy.diag(P[1].diagonal())
     return system.T + system.U*numpy.array([nid,niu])
 
-def order_parameter_hubbard_holstein(system, Psi):
+def order_parameter_hubbard_holstein(system, G):
     r"""Calculate order parameters for the Hubbard-Hostein model.
 
     Parameters
     ----------
     system : :class:`HubbardHolstein`
         System information for the HubbardHolstein model.
-    Psi : :class:`numpy.ndarray`
-        Walker's wavefunction
+    G : :class:`numpy.ndarray`
+        Walker's "Green's function"
 
     Returns
     -------
@@ -231,28 +231,30 @@ def order_parameter_hubbard_holstein(system, Psi):
     SDW_OP = 0
     CDW_OP = 0
 
-    psi_up = Psi[:,:8]
-    psi_down = Psi[:,8:]
-    density_up = numpy.diag(psi_up.dot((psi_up.conj()).T))
-    density_down = numpy.diag(psi_down.dot((psi_down.conj()).T))
+    density_up = G[0].diagonal()
+    density_down = G[1].diagonal()
 
     #print("Up densities:", density_up)
     #print("Down densities:", density_down)
     #print("Sum of Den up", numpy.sum(numpy.sum(density_up)))
     #print("Sum of Den down", numpy.sum(numpy.sum(density_up)))
 
-    niup_final = numpy.reshape(density_up, (4, 4))
-    nidown_final = numpy.reshape(density_down, (4, 4))
+    nx = system.nx
+    ny = system.ny
+    N = nx * ny
+
+    niup_final = numpy.reshape(density_up, (nx, ny))
+    nidown_final = numpy.reshape(density_down, (nx, ny))
     nitotal_final = niup_final + nidown_final
 
-    for i in range(4):
-        for j in range(4):
-            SDW_OP += numpy.abs(niup_final[i,j] - nidown_final[i,j])/16
+    for i in range(nx):
+        for j in range(ny):
+            SDW_OP += numpy.abs(niup_final[i,j] - nidown_final[i,j]) / N
 
-    for i in range(4):
-        for j in range(4):
-            CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j])/32
-            CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4])/32
+    for i in range(0, nx, 2):
+        for j in range(0, ny, 2):
+            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j]) / N
+            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4]) / N
 
 
     #print("SDW order parameter:", SDW_OP)
