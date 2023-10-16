@@ -615,9 +615,9 @@ def variational_energy_single_det(system, psi, G=None, GH=None,
     return local_energy(system, G, Ghalf=GH, rchol=rchol, eri=eri, C0=C0, ecoul0=ecoul0, exxa0=exxa0, exxb0=exxb0, UVT=UVT)
 
 # Order Paramter calculations for the Hubbard-Holstein model.
-def order_parameter_hh(system, Psi):
+def order_parameter_hh(system, G):
     if system.name == "HubbardHolstein":
-        (sdw_op, cdw_op) = order_parameter_hubbard_holstein(system, Psi)
+        (sdw_op, cdw_op) = order_parameter_hubbard_holstein(system, G)
         return (sdw_op, cdw_op)
     else:
         print("SOMETHING IS VERY WRONG... WHY ARE YOU CALLING HUBBARD-HOSTEIN FUNCTION?")
