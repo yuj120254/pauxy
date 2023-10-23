@@ -241,21 +241,28 @@ def order_parameter_hubbard_holstein(system, G):
 
     nx = system.nx
     ny = system.ny
-    N = nx * ny
+    #N = nx * ny
 
     niup_final = numpy.reshape(density_up, (nx, ny))
     nidown_final = numpy.reshape(density_down, (nx, ny))
     nitotal_final = niup_final + nidown_final
 
+    SDW_counter = 0
+    CDW_counter = 0
+
     for i in range(nx):
         for j in range(ny):
-            SDW_OP += numpy.abs(niup_final[i,j] - nidown_final[i,j]) / N
+            SDW_OP += numpy.abs(niup_final[i,j] - nidown_final[i,j])
+            SDW_counter += 1
 
     for i in range(0, nx, 2):
         for j in range(0, ny, 2):
-            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j]) / N
-            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4]) / N
+            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j])
+            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4]) 
+            CDW_counter += 2
 
+    SDW_OP /= SDW_counter
+    CDW_OP /= CDW_counter
 
     #print("SDW order parameter:", SDW_OP)
     #print("CDW order parameter:", CDW_OP)
