@@ -220,10 +220,6 @@ class AFQMC(object):
         if verbose:
             self.estimators.estimators['mixed'].print_step(comm, comm.size, 0, 1)
 
-        start_dmat = numpy.array([numpy.concatenate((w.G[0].diagonal(), w.G[1].diagonal())) for w in self.psi.walkers])
-
-        numpy.savetxt("dmat_test.csv", numpy.real(start_dmat), delimiter = ',')
-
         for step in range(1, self.qmc.total_steps + 1):
             start_step = time.time()
             if step % self.qmc.nstblz == 0:
@@ -231,6 +227,21 @@ class AFQMC(object):
                 self.psi.orthogonalise(self.trial,
                                        self.propagators.free_projection)
                 self.tortho += time.time() - start
+            nwalker_counter = [0]
+            if step == 1:
+                self.estimators.output_densities(self.psi, step)
+
+            if step % 1000 == 0:
+                nwalker_counter[0] = 0
+                for w in self.psi.walkers:
+                    walker_weight = w.weight*w.le_oratio
+                    weight_array = walker_weight * numpy.ones(numpy.shape(w.G[0].diagonal()))
+                    densities = numpy.real(numpy.array(numpy.vstack((w.G[0].diagonal(), w.G[1].diagonal()))))
+                    fname = "densities" + str(step) + str(w.index) + ".npy"
+                    #print(fname)
+                    numpy.save(fname, numpy.vstack((weight_array, densities)))
+                    nwalker_counter[0] = nwalker_counter[0] + 1
+
             start = time.time()
             for w in self.psi.walkers:
                 if abs(w.weight) > 1e-8:
@@ -261,12 +272,6 @@ class AFQMC(object):
         #Final
         sum_of_weights = sum([w.weight*w.ot*w.phase for w in self.psi.walkers])
 
-        #up_densities = self.psi.walkers[0].G[0].diagonal()
-        #down_densities = self.psi.walkers[0].G[1].diagonal()
-        #final_dmat = numpy.array([w.G[0].diagonal() for w in self.psi.walkers])
-        final_dmat = numpy.array([numpy.concatenate((w.G[0].diagonal(), w.G[1].diagonal())) for w in self.psi.walkers])
-
-        numpy.savetxt("dmat3.csv", numpy.real(final_dmat), delimiter = ',')
 
     def finalise(self, verbose=False):
         """Tidy up.
@@ -396,3 +401,13 @@ class AFQMC(object):
         except IndexError:
             bp_rdm, bp_rdm_err = None, None
         return (bp_rdm, bp_rdm_err)
+
+    def print_densities(self, w, step):
+        print("yes")
+        walker_weight = w.weight*w.le_oratio
+        weight_array = walker_weight * numpy.ones(numpy.shape(w.G[0].diagonal()))
+        densities = numpy.real(numpy.array(numpy.vstack((w.G[0].diagonal(), w.G[1].diagonal()))))
+        fname = "densities" + str(step) + str(w.index) + ".npy"
+        print(fname)
+        numpy.save(fname, numpy.vstack((weight_array, densities)))
+

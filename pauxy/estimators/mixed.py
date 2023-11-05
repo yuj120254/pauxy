@@ -404,6 +404,7 @@ class Mixed(object):
             fh5['basic/headers'] = numpy.array(self.header).astype('S')
         self.output = H5EstimatorHelper(filename, 'basic')
 
+
 # Energy evaluation routines for the Hubbard-Holstein model.
 def local_energy_hh(system, G, X, Lap, Ghalf=None):
     if system.name == "HubbardHolstein":
