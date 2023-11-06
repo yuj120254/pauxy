@@ -239,14 +239,6 @@ class Mixed(object):
                         self.estimates[self.names.edenom] += w.weight * w.le_oratio
                         #print(3) ALL HERE
                 #sdw_op, cdw_op = calculate_order_parameters(system, w.phi)
-                #print("added:")
-                #print(sdw_op)
-                #print(cdw_op)
-                #self.estimates[self.names.sdw] += w.weight * sdw_op
-                #self.estimates[self.names.cdw] += w.weight * cdw_op
-                #print("total")
-                #print(self.estimates[self.names.sdw])
-                #print(self.estimates[self.names.cdw])
                 self.estimates[self.names.uweight] += w.unscaled_weight
                 self.estimates[self.names.weight] += w.weight
                 self.estimates[self.names.ovlp] += w.weight * abs(w.ot)
@@ -259,6 +251,22 @@ class Mixed(object):
                     start = end
                     end = end + self.two_rdm.size
                     self.estimates[start:end] += w.weight*self.two_rdm.flatten().real
+
+                if (step == 1) or (step % 1000 == 0):
+                    fname = "densities" + str(step) + ".npy"
+                    outname = "densities" + str(step) + ".csv"
+                    walker_weight = w.weight*w.le_oratio
+                    weight_array = walker_weight * numpy.ones(numpy.shape(w.G[0].diagonal()))
+                    densities = numpy.real(numpy.array(numpy.vstack((w.G[0].diagonal(), w.G[1].diagonal()))))
+                    weight_p_densities = numpy.vstack((weight_array, densities))
+                    try:
+                        output_array = numpy.load(fname)
+                        output_array = numpy.vstack((output_array, weight_p_densities))
+                    except:
+                        output_array = weight_p_densities
+                    numpy.save(fname, output_array)
+                    numpy.savetxt(outname , output_array)
+
 
     def print_step(self, comm, nprocs, step, nsteps=None, free_projection=False):
         """Print mixed estimates to file.

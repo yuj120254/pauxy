@@ -227,20 +227,22 @@ class AFQMC(object):
                 self.psi.orthogonalise(self.trial,
                                        self.propagators.free_projection)
                 self.tortho += time.time() - start
-            nwalker_counter = [0]
-            if step == 1:
-                self.estimators.output_densities(self.psi, step)
 
-            if step % 1000 == 0:
-                nwalker_counter[0] = 0
+            '''if step == 1:
+                fname = "densities" + str(step) + ".npy"
+                outname = "densities" + str(step) + ".csv"
                 for w in self.psi.walkers:
                     walker_weight = w.weight*w.le_oratio
                     weight_array = walker_weight * numpy.ones(numpy.shape(w.G[0].diagonal()))
                     densities = numpy.real(numpy.array(numpy.vstack((w.G[0].diagonal(), w.G[1].diagonal()))))
-                    fname = "densities" + str(step) + str(w.index) + ".npy"
-                    #print(fname)
-                    numpy.save(fname, numpy.vstack((weight_array, densities)))
-                    nwalker_counter[0] = nwalker_counter[0] + 1
+                    weight_p_densities = numpy.vstack((weight_array, densities))
+                    try:
+                        output_array = numpy.load(fname)
+                        output_array = numpy.vstack((output_array, weight_p_densities))
+                    except:
+                        output_array = weight_p_densities
+                    numpy.save(fname, output_array)
+                    numpy.savetxt(outname , output_array)'''
 
             start = time.time()
             for w in self.psi.walkers:
@@ -401,13 +403,3 @@ class AFQMC(object):
         except IndexError:
             bp_rdm, bp_rdm_err = None, None
         return (bp_rdm, bp_rdm_err)
-
-    def print_densities(self, w, step):
-        print("yes")
-        walker_weight = w.weight*w.le_oratio
-        weight_array = walker_weight * numpy.ones(numpy.shape(w.G[0].diagonal()))
-        densities = numpy.real(numpy.array(numpy.vstack((w.G[0].diagonal(), w.G[1].diagonal()))))
-        fname = "densities" + str(step) + str(w.index) + ".npy"
-        print(fname)
-        numpy.save(fname, numpy.vstack((weight_array, densities)))
-

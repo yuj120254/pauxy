@@ -257,8 +257,8 @@ def order_parameter_hubbard_holstein(system, G):
 
     for i in range(0, nx, 2):
         for j in range(0, ny, 2):
-            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j])
-            CDW_OP += 2 * numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4]) 
+            CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[(i+1)%4,j])
+            CDW_OP += numpy.abs(nitotal_final[i,j] - nitotal_final[i, (j+1)%4]) 
             CDW_counter += 2
 
     SDW_OP /= SDW_counter
