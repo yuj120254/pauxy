@@ -160,3 +160,4 @@ class Estimators(object):
         """
         for k, e in self.estimators.items():
             e.update(system, qmc, trial, psi, step, free_projection)
+

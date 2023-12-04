@@ -228,22 +228,6 @@ class AFQMC(object):
                                        self.propagators.free_projection)
                 self.tortho += time.time() - start
 
-            '''if step == 1:
-                fname = "densities" + str(step) + ".npy"
-                outname = "densities" + str(step) + ".csv"
-                for w in self.psi.walkers:
-                    walker_weight = w.weight*w.le_oratio
-                    weight_array = walker_weight * numpy.ones(numpy.shape(w.G[0].diagonal()))
-                    densities = numpy.real(numpy.array(numpy.vstack((w.G[0].diagonal(), w.G[1].diagonal()))))
-                    weight_p_densities = numpy.vstack((weight_array, densities))
-                    try:
-                        output_array = numpy.load(fname)
-                        output_array = numpy.vstack((output_array, weight_p_densities))
-                    except:
-                        output_array = weight_p_densities
-                    numpy.save(fname, output_array)
-                    numpy.savetxt(outname , output_array)'''
-
             start = time.time()
             for w in self.psi.walkers:
                 if abs(w.weight) > 1e-8:

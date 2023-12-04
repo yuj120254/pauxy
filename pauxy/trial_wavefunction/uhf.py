@@ -250,17 +250,17 @@ class UHF(object):
             x, y = decode_basis(4,4,i)
             if x % 2 == 0 and y % 2 == 0:
                 wfn[i,nalpha] = 1.0
-                wfn[i,nup+nalpha] = -1.0
+                #wfn[i,nup+nalpha] = -1.0
                 nalpha += 1
-            elif x % 2 == 0 and y % 2 == 1:
-                #wfn[i,nup+nbeta] = -1.0
+            if x % 2 == 0 and y % 2 == 0:
+                wfn[i,nup+nbeta] = -1.0
                 nbeta += 1
-            elif x % 2 == 1 and y % 2 == 0:
-                #wfn[i,nup+nbeta] = -1.0
+            if x % 2 == 1 and y % 2 == 1:
+                wfn[i,nup+nbeta] = -1.0
                 nbeta += 1
-            elif x % 2 == 1 and y % 2 == 1:
+            if x % 2 == 1 and y % 2 == 1:
                 wfn[i,nalpha] = 1.0
-                wfn[i,nup+nalpha] = -1.0
+                #wfn[i,nup+nalpha] = -1.0
                 nalpha += 1
         return wfn, 10
 

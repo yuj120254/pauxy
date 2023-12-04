@@ -661,8 +661,8 @@ class CoherentState(object):
             if (self.random_guess):
                 for i in range(system.nbasis):
                     x[i] = numpy.random.randn(1)
-            else:
-                for i in range(system.nbasis):
+            else: ### This is Causing Stripes?
+                for i in range(system.nbasis): 
                     if (i%2==0):
                         x[i] /= 2.0
                     else:
