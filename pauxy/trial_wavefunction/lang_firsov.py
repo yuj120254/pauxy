@@ -158,6 +158,8 @@ class LangFirsov(object):
 
         self.nocca = system.nup
         self.noccb = system.ndown
+        
+        self.symmetrize = trial.get('symmetrize', False)
 
         if self.read_in is not None:
             if verbose:
@@ -227,13 +229,26 @@ class LangFirsov(object):
 
         print("# Variational Lang-Firsov Energy = {}".format(self.energy))
 
+        print("twf:", self.psi)
+        print("density matrix:", self.density_matrix(self.psi))
+        print("density up:", self.density(self.psi[:,:8]))
+        print("density down:", self.density(self.psi[:,8:]))
+        numpy.savetxt("dmat2.csv", numpy.real(self.density_matrix(self.psi)), delimiter = ',')
         
         self.initialisation_time = time.time() - init_time
         self.init = self.psi.copy()
 
         self.shift = numpy.zeros(system.nbasis)
-        self.calculate_energy(system)
+        self.calculate_energy(system)       
+        
+        # For interface compatability
+        self.ndets = 1
+        self.bp_wfn = trial.get('bp_wfn', None)
+        self.error = False
+        self.eigs = numpy.append(self.eigs_up, self.eigs_dn)
+        self.eigs.sort()
 
+        self._mem_required = 0.0
         self._rchol = None
         self._eri = None
         self._UVT = None
@@ -241,6 +256,8 @@ class LangFirsov(object):
         print("# Lang-Firsov optimized gamma = {}".format(self.gamma))
         print("# Lang-Firsov optimized shift = {}".format(self.shift))
         print("# Lang-Firsov optimized energy = {}".format(self.energy))
+        
+
 
         if verbose:
             print ("# Updated lang_firsov.")
@@ -383,7 +400,7 @@ class LangFirsov(object):
         D = numpy.zeros(nbsf)
         for i in range(nbsf):
             phi = phi0.copy()
-            phi[i] += self.gamma
+            phi[i] += self.gamma[i]
             
             # QHO = HarmonicOscillator(m = self.m, w = self.w0, order = 0, shift=X)
             # D[i] = QHO.value(walker.X)
@@ -407,7 +424,7 @@ class LangFirsov(object):
         
         for i in range(nbsf):
             phi = phi0.copy()
-            phi[i] += self.gamma
+            phi[i] += self.gamma[i]
             # QHO = HarmonicOscillator(m = self.m, w = self.w0, order = 0, shift=X[i])
             # dD[i] = QHO.gradient(walker.X[i]) * QHO.value(walker.X[i]) # gradient is actually grad / value
             
@@ -430,7 +447,7 @@ class LangFirsov(object):
         
         for i in range(nbsf):
             phi = phi0.copy()
-            phi[i] += self.gamma
+            phi[i] += self.gamma[i]
 
             # QHO = HarmonicOscillator(m = self.m, w = self.w0, order = 0, shift=phi[i])
             # d2D[i] = QHO.laplacian(walker.X[i]) * QHO.value(walker.X[i]) # gradient is actually grad / value
@@ -450,6 +467,8 @@ class LangFirsov(object):
     def gradient(self, walker):
 
         psi0 = self.psi.copy()
+        psi0a = psi0[:,:self.nocca]
+        psi0b = psi0[:,self.nocca:]
         
         nbsf = walker.X.shape[0]
         
@@ -459,6 +478,7 @@ class LangFirsov(object):
         # Dvec = self.compute_Dvec(walker)
         # self.psi = numpy.einsum("m,mi->mi",Dvec, psi0)
         # ot_denom = walker.calc_otrial(self)
+        Dvec = self.compute_Dvec(walker)
         self.psi[:,:self.nocca] = numpy.einsum("m,mi->mi",Dvec, psi0a)
         self.psi[:,self.nocca:] = psi0b
         walker.inverse_overlap(self)
@@ -560,4 +580,23 @@ class LangFirsov(object):
 
         self.energy = Eph + Eeph + Eee + Ekin
         print("# Eee, Ekin, Eph, Eeph = {}, {}, {}, {}".format(Eee, Ekin, Eph, Eeph))
+        
+    def value(self, walker): # value
+        boson_trial = HarmonicOscillator(m = self.m, w = self.w0, order = 0, shift=self.shift)
+        phi = boson_trial.value(walker.X)
+        return phi
+
+    def bosonic_local_energy(self, walker):
+
+        ke   = - 0.5 * numpy.sum(self.laplacian(walker)) / self.m
+        pot  = 0.5 * self.m * self.w0 * self.w0 * numpy.sum(walker.X * walker.X)
+        eloc = ke+pot - 0.5 * self.w0 * self.nbasis # No zero-point energy
+
+        return eloc
+
+    def density(self, wfn):
+        return numpy.diag(wfn.dot((wfn.conj()).T))
+
+    def density_matrix(self, wfn):
+        return wfn.dot((wfn.conj()).T)
 

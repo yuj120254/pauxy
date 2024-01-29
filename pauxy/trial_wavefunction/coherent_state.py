@@ -654,6 +654,12 @@ class CoherentState(object):
         else:
             c0 = numpy.zeros(nbsf*nbsf, dtype=numpy.float64)
             c0[:nbsf*nbsf] = Ca.ravel()
+            
+        print("variational starters:")
+        print(x)
+        print(self.G)
+        print(c0)
+        print(self.shift.real.copy())
 #       
 
         x[:system.nbasis] = self.shift.real.copy() # initial guess
