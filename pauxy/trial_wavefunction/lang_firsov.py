@@ -155,7 +155,9 @@ class LangFirsov(object):
 
         self.m = system.m
         self.w0 = system.w0
+        self.g = system.g
 
+        self.nbasis = system.nbasis
         self.nocca = system.nup
         self.noccb = system.ndown
         
@@ -229,12 +231,17 @@ class LangFirsov(object):
 
         print("# Variational Lang-Firsov Energy = {}".format(self.energy))
 
+        niup = self.density(self.psi[:,:8])
+        nidown = self.density(self.psi[:,8:])
+
         print("twf:", self.psi)
         print("density matrix:", self.density_matrix(self.psi))
-        print("density up:", self.density(self.psi[:,:8]))
-        print("density down:", self.density(self.psi[:,8:]))
+        print("density up:", niup)
+        print("density down:", nidown)
         numpy.savetxt("dmat2.csv", numpy.real(self.density_matrix(self.psi)), delimiter = ',')
-        
+        numpy.savetxt("density_up.csv", niup, delimiter = ',')
+        numpy.savetxt("density_down.csv", nidown, delimiter = ',')
+                        
         self.initialisation_time = time.time() - init_time
         self.init = self.psi.copy()
 
@@ -581,10 +588,52 @@ class LangFirsov(object):
         self.energy = Eph + Eeph + Eee + Ekin
         print("# Eee, Ekin, Eph, Eeph = {}, {}, {}, {}".format(Eee, Ekin, Eph, Eeph))
         
-    def value(self, walker): # value
+    def value(self, walker): # value?
         boson_trial = HarmonicOscillator(m = self.m, w = self.w0, order = 0, shift=self.shift)
         phi = boson_trial.value(walker.X)
         return phi
+        '''nbsf = self.nbasis
+        nocca = self.nocca
+        noccb = self.noccb
+        nvira = nbsf - nocca
+        nvirb = nbsf - noccb
+    
+        nova = nocca*nvira
+        novb = noccb*nvirb
+    
+        x = walker.X
+        m = self.m
+        w0 = self.w0
+        g = self.g
+
+        Ga = walker.G[0]
+        Gb = walker.G[1]
+
+        ni = np.diag(Ga+Gb)
+
+        sqrttwomw = np.sqrt(m * w0*2.0)
+        phi = np.zeros(nbsf)
+    
+        gamma = x#np.array(x[nova+novb:], dtype=np.float64)
+
+        gamma0 = self.gamma
+        
+        print("gamma stuff:")
+        print("gamma len:", numpy.shape(gamma))
+        print(gamma)
+        print("gamma0 len:", numpy.shape(gamma0))
+        print(gamma0)
+        gamma = gamma - gamma0
+
+        #if (not relax_gamma):
+        #    gamma = g * np.sqrt(2.0 /(m *w0**3)) * np.ones(nbsf)
+
+        Eph = w0 * np.sum(phi*phi)
+        Eeph = np.sum ((gamma * m * w0**2 - g * sqrttwomw) * 2.0 * phi / sqrttwomw * ni)
+        Eeph += np.sum((gamma**2 * m*w0**2 / 2.0 - g * gamma * sqrttwomw) * ni)
+        
+        result = numpy.exp(-Eeph)
+        return result'''
 
     def bosonic_local_energy(self, walker):
 

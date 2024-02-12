@@ -231,8 +231,8 @@ def order_parameter_hubbard_holstein(system, G):
     SDW_OP = 0
     CDW_OP = 0
 
-    density_up = G[0].diagonal()
-    density_down = G[1].diagonal()
+    density_up = G.diagonal()
+    density_down = G.diagonal()
 
     #print("Up densities:", density_up)
     #print("Down densities:", density_down)

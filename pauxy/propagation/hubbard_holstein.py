@@ -417,16 +417,16 @@ class HirschDMC(object):
             Trial wavefunction object.
         """
         if (self.symmetric_trotter):
-            if abs(walker.weight.real) > 0:
-                self.boson_importance_sampling(walker, system, trial, self.dt/2.)
+            #if abs(walker.weight.real) > 0:
+                #self.boson_importance_sampling(walker, system, trial, self.dt/2.)
             if abs(walker.weight) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
             if abs(walker.weight) > 0:
                 self.two_body(walker, system, trial) # hard-coded to do self.dt
             if abs(walker.weight.real) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
-            if abs(walker.weight.real) > 0:
-                self.boson_importance_sampling(walker, system, trial, self.dt/2.)
+            #if abs(walker.weight.real) > 0:
+                #self.boson_importance_sampling(walker, system, trial, self.dt/2.)
         else:
             if abs(walker.weight) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
@@ -434,8 +434,8 @@ class HirschDMC(object):
                 self.two_body(walker, system, trial) # hard-coded to do self.dt
             if abs(walker.weight.real) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
-            if abs(walker.weight.real) > 0:
-                self.boson_importance_sampling(walker, system, trial, self.dt)
+            #if abs(walker.weight.real) > 0:
+                #self.boson_importance_sampling(walker, system, trial, self.dt)
         
     def boson_free_propagation(self, walker, system, trial, eshift):
         #Change weight

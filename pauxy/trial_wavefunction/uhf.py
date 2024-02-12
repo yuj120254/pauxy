@@ -95,12 +95,16 @@ class UHF(object):
             Gdown = gab(self.psi[:,system.nup:], self.psi[:,system.nup:]).T
         else:
             Gdown = numpy.zeros_like(Gup)
+            
+        niup = numpy.reshape(self.density(self.psi[:,:system.nup]), (system.nx, system.ny))
+        nidown = numpy.reshape(self.density(self.psi[:,system.ndown:]), (system.nx, system.ny))
 
         print("density matrix:", self.density_matrix(self.psi))
-        print("spin up densities:", numpy.reshape(self.density(self.psi[:,:system.nup]), (system.nx, system.ny)))
-        print("spin down densities:", numpy.reshape(self.density(self.psi[:,system.ndown:]), (system.nx, system.ny)))
+        print("spin up densities:", niup)
+        print("spin down densities:", nidown)
         numpy.savetxt("dmat.csv", numpy.real(self.density_matrix(self.psi)), delimiter = ',')
-
+        numpy.savetxt("density.csv", niup + nidown, delimiter = ',')
+                
         niup_final = numpy.reshape(self.density(self.psi[:,:system.nup]), (system.nx, system.ny))
         nidown_final = numpy.reshape(self.density(self.psi[:,system.ndown:]), (system.nx, system.ny))
 

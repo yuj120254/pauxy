@@ -6,6 +6,7 @@ from pauxy.trial_wavefunction.coherent_state  import CoherentState
 from pauxy.trial_wavefunction.hartree_fock import HartreeFock
 from pauxy.trial_wavefunction.multi_determinant import MultiDeterminant
 from pauxy.trial_wavefunction.multi_slater import MultiSlater
+from pauxy.trial_wavefunction.lang_firsov import LangFirsov
 from pauxy.utils.io import read_qmcpack_wfn_hdf, get_input_value
 from pauxy.estimators.greens_function import gab_spin
 
@@ -113,6 +114,12 @@ def get_trial_wavefunction(system, options={}, mf=None,
     elif wfn_type.lower() == 'coherent_state':
         if comm.rank == 0:
             trial = CoherentState(system, options=options, verbose=verbose)
+        else:
+            trial = None
+        trial = comm.bcast(trial)
+    elif wfn_type.lower() == 'lang_firsov':
+        if comm.rank == 0:
+            trial = LangFirsov(system, trial=options, verbose=verbose)
         else:
             trial = None
         trial = comm.bcast(trial)
