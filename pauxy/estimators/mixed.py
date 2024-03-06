@@ -224,11 +224,24 @@ class Mixed(object):
                         #print(2)
                 else:
                     if step % self.energy_eval_freq == 0:
-                        w.greens_function(trial)
+                        '''w.greens_function(trial)
                         if self.eval_energy:
                             E, T, V = w.local_energy(system, rchol=trial._rchol, eri=trial._eri, UVT=trial._UVT)
                         else:
-                            E, T, V = 0, 0, 0
+                            E, T, V = 0, 0, 0'''
+                        if (system.name == "HubbardHolstein"):
+                            # trial.greens_function(w) # greens function and other necessary bits should be recomputed inside trial.local_energy
+                            if self.eval_energy:
+                                E, T, V = trial.local_energy(system, w) # should take hamiltonian instead of system as an argument in the future
+                            else:
+                                E, T, V = 0, 0, 0
+                        else:
+                            w.greens_function(trial)
+                            if self.eval_energy:
+                                E, T, V = w.local_energy(system, rchol=trial._rchol, eri=trial._eri, UVT=trial._UVT)
+                            else:
+                                E, T, V = 0, 0, 0
+                        
                         sdw_op, cdw_op = w.order_parameters(system)
                         self.estimates[self.names.sdw] += w.weight*w.le_oratio*sdw_op
                         self.estimates[self.names.cdw] += w.weight*w.le_oratio*cdw_op
