@@ -108,7 +108,8 @@ class UHF(object):
         niup_final = numpy.reshape(self.density(self.psi[:,:system.nup]), (system.nx, system.ny))
         nidown_final = numpy.reshape(self.density(self.psi[:,system.ndown:]), (system.nx, system.ny))
 
-        SDW_OP = 0
+        
+        '''SDW_OP = 0
 
         for i in range(4):
             for j in range(4):
@@ -129,7 +130,7 @@ class UHF(object):
         #        CDW_OP += numpy.abs(nidown_final[i,j] - nidown_final[i, (j+1)%4])/64*rel_weight
  
         print("SDW order parameter:", SDW_OP)
-        print("CDW order parameter:", CDW_OP)
+        print("CDW order parameter:", CDW_OP)'''
 
         self.le_oratio = 1.0
         self.G = numpy.array([Gup, Gdown])

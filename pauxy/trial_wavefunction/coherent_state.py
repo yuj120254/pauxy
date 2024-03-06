@@ -656,11 +656,10 @@ class CoherentState(object):
             c0[:nbsf*nbsf] = Ca.ravel()
             
         print("variational starters:")
-        print(x)
-        print(self.G)
-        print(c0)
-        print(self.shift.real.copy())
-#       
+        #print(x)
+        #print(self.G)
+        #print(c0)
+        #print(self.shift.real.copy())
 
         x[:system.nbasis] = self.shift.real.copy() # initial guess
         if (self.init_guess_file is None and self.init_guess_file_stripe is None):

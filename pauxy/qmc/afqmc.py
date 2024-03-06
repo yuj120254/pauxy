@@ -8,6 +8,7 @@ import uuid
 from math import exp
 import copy
 import h5py
+import scipy.linalg
 from pauxy.estimators.handler import Estimators
 from pauxy.propagation.utils import get_propagator_driver
 from pauxy.qmc.options import QMCOpts
@@ -189,7 +190,7 @@ class AFQMC(object):
                 print("# Warning: Memory requirements of calculation are high")
                 print("# Consider using fewer walkers per node.")
                 print("# Memory available: {:.6f}".format(mem_avail))
-            json.encoder.FLOAT_REPR = lambda o: format(o, '.6f')
+            json.encoder.FLOAT_REPR = 	lambda o: format(o, '.6f')
             json_string = to_json(self)
             self.estimators.json_string = json_string
             self.estimators.dump_metadata()
@@ -216,9 +217,14 @@ class AFQMC(object):
         self.estimators.estimators['mixed'].update(self.system, self.qmc,
                                                    self.trial, self.psi, 0,
                                                    self.propagators.free_projection)
+
         # Print out zeroth step for convenience.
         if verbose:
             self.estimators.estimators['mixed'].print_step(comm, comm.size, 0, 1)
+
+        #for w in self.psi.walkers:
+        #    print("phi:", w.phi)
+        #    print("psi:", self.trial.psi)
 
         for step in range(1, self.qmc.total_steps + 1):
             start_step = time.time()
@@ -231,6 +237,7 @@ class AFQMC(object):
             start = time.time()
             for w in self.psi.walkers:
                 if abs(w.weight) > 1e-8:
+                    #print("weight:", w.weight)
                     self.propagators.propagate_walker(w, self.system,
                                                       self.trial, eshift)
                 if (abs(w.weight) > w.total_weight * 0.10) and step > 1:
@@ -254,6 +261,7 @@ class AFQMC(object):
             else:
                 eshift += (self.estimators.estimators['mixed'].get_shift()-eshift)
             self.tstep += time.time() - start_step
+            #print(1/0)
 
         #Final
         sum_of_weights = sum([w.weight*w.ot*w.phase for w in self.psi.walkers])
@@ -288,6 +296,7 @@ class AFQMC(object):
                 SDW_OP = 0
                 CDW_OP = 0
 
+                """
                 for w in self.psi.walkers:
                     print("weights:", w.weight)
                     wfac = w.weight * w.ot * w.phase
@@ -325,7 +334,7 @@ class AFQMC(object):
                     #        CDW_OP += numpy.abs(nidown_final[i,j] - nidown_final[i, (j+1)%4])/64*rel_weight
 
                 print("SDW order parameter:", SDW_OP)
-                print("CDW order parameter:", CDW_OP)
+                print("CDW order parameter:", CDW_OP)"""
 
 
 
@@ -387,3 +396,4 @@ class AFQMC(object):
         except IndexError:
             bp_rdm, bp_rdm_err = None, None
         return (bp_rdm, bp_rdm_err)
+

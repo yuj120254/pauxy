@@ -252,6 +252,10 @@ class Mixed(object):
                     end = end + self.two_rdm.size
                     self.estimates[start:end] += w.weight*self.two_rdm.flatten().real
 
+                #print("Density matrix:", str(step))
+                #print(w.G[0].diagonal())
+                #print(w.G[1].diagonal())
+
                 if (step == 1) or (step % 1000 == 0):
                     fname = "densities" + str(step) + ".npy"
                     outname = "densities" + str(step) + ".csv"

@@ -225,14 +225,16 @@ class LangFirsov(object):
         self.eigs = numpy.append(self.eigs_up, self.eigs_dn)
         self.eigs.sort()
 
+        print("twf before var:", self.psi)
+
         self.gamma = system.g * numpy.sqrt(2.0 / (system.m*system.w0**3)) * numpy.ones(system.nbasis)
         print("# Initial gamma = {}".format(self.gamma))
         self.run_variational(system)
 
         print("# Variational Lang-Firsov Energy = {}".format(self.energy))
 
-        niup = self.density(self.psi[:,:8])
-        nidown = self.density(self.psi[:,8:])
+        niup = self.density(self.psi[:,:self.nocca])
+        nidown = self.density(self.psi[:,self.noccb:])
 
         print("twf:", self.psi)
         print("density matrix:", self.density_matrix(self.psi))
@@ -469,25 +471,59 @@ class LangFirsov(object):
 
         return d2D
 
+#   Compute  <\psi_T| D | \psi>
+    def value(self, walker): # value?
+        psi0 = self.psi.copy()
+        psi0a = psi0[:,:self.nocca]
+        psi0b = psi0[:,self.nocca:]
+
+        nbsf = walker.X.shape[0]
+        grad = numpy.zeros(nbsf)
+
+        # Compute value
+
+        Dvec = self.compute_Dvec(walker)
+        #print("Dvec:", Dvec)
+        #print("psi0:", psi0) 
+        self.psi[:,:self.nocca] = numpy.einsum("m,mi->mi",Dvec, psi0a)
+        self.psi[:,self.nocca:] = psi0b
+        #print("psi:", self.psi)
+        walker.inverse_overlap(self)
+        value = walker.calc_otrial(self)
+
+        self.psi[:,:self.nocca] = psi0a
+        self.psi[:,self.nocca:] = numpy.einsum("m,mi->mi",Dvec, psi0b)
+        walker.inverse_overlap(self)
+        value += walker.calc_otrial(self)
+
+        self.psi = psi0.copy()
+        #print("calculated value")
+        return value
 
 #   Compute  <\psi_T | \partial_i D | \psi> / <\psi_T| D | \psi>
     def gradient(self, walker):
-
         psi0 = self.psi.copy()
         psi0a = psi0[:,:self.nocca]
         psi0b = psi0[:,self.nocca:]
         
         nbsf = walker.X.shape[0]
-        
+        #print("nbsf:", nbsf)
+
         grad = numpy.zeros(nbsf)
 
         # Compute denominator
-        # Dvec = self.compute_Dvec(walker)
-        # self.psi = numpy.einsum("m,mi->mi",Dvec, psi0)
-        # ot_denom = walker.calc_otrial(self)
+        #Dvec = self.compute_Dvec(walker)
+        #self.psi[:,:self.nocca] = numpy.einsum("m,mi->mi",Dvec, psi0a)
+        #self.psi[:,self.nocca:] = numpy.einsum("m,mi->mi",Dvec, psi0b)
+        #walker.inverse_overlap(self)
+        #ot_denom = walker.calc_otrial(self)
+
         Dvec = self.compute_Dvec(walker)
+        #print("Dvec:", Dvec)
+        #print("psi0:", psi0) 
         self.psi[:,:self.nocca] = numpy.einsum("m,mi->mi",Dvec, psi0a)
         self.psi[:,self.nocca:] = psi0b
+        #print("psi:", self.psi)
         walker.inverse_overlap(self)
         ot_denom = walker.calc_otrial(self)
 
@@ -496,15 +532,19 @@ class LangFirsov(object):
         walker.inverse_overlap(self)
         ot_denom += walker.calc_otrial(self)
 
+        #self.psi = psi0.copy()
+
         # Compute numerator
         dD = self.compute_dDvec(walker)
 
         for i in range (nbsf):
-            dDvec = numpy.zeros_like(dD)
+            dDvec = Dvec.copy() #numpy.zeros_like(dD)
             dDvec[i] = dD[i]
+            #print("dDvec:", dDvec)
             
             self.psi[:,:self.nocca] = numpy.einsum("m,mi->mi",dDvec, psi0a)
             self.psi[:,self.nocca:] = psi0b
+            #print("psi:", self.psi)
             walker.inverse_overlap(self)
             ot_num = walker.calc_otrial(self)
             
@@ -512,6 +552,7 @@ class LangFirsov(object):
             self.psi[:,self.nocca:] = numpy.einsum("m,mi->mi",dDvec, psi0b)
             walker.inverse_overlap(self)
             ot_num += walker.calc_otrial(self)
+            
             grad[i] = ot_num / ot_denom
         
         self.psi = psi0.copy()
@@ -587,53 +628,6 @@ class LangFirsov(object):
 
         self.energy = Eph + Eeph + Eee + Ekin
         print("# Eee, Ekin, Eph, Eeph = {}, {}, {}, {}".format(Eee, Ekin, Eph, Eeph))
-        
-    def value(self, walker): # value?
-        boson_trial = HarmonicOscillator(m = self.m, w = self.w0, order = 0, shift=self.shift)
-        phi = boson_trial.value(walker.X)
-        return phi
-        '''nbsf = self.nbasis
-        nocca = self.nocca
-        noccb = self.noccb
-        nvira = nbsf - nocca
-        nvirb = nbsf - noccb
-    
-        nova = nocca*nvira
-        novb = noccb*nvirb
-    
-        x = walker.X
-        m = self.m
-        w0 = self.w0
-        g = self.g
-
-        Ga = walker.G[0]
-        Gb = walker.G[1]
-
-        ni = np.diag(Ga+Gb)
-
-        sqrttwomw = np.sqrt(m * w0*2.0)
-        phi = np.zeros(nbsf)
-    
-        gamma = x#np.array(x[nova+novb:], dtype=np.float64)
-
-        gamma0 = self.gamma
-        
-        print("gamma stuff:")
-        print("gamma len:", numpy.shape(gamma))
-        print(gamma)
-        print("gamma0 len:", numpy.shape(gamma0))
-        print(gamma0)
-        gamma = gamma - gamma0
-
-        #if (not relax_gamma):
-        #    gamma = g * np.sqrt(2.0 /(m *w0**3)) * np.ones(nbsf)
-
-        Eph = w0 * np.sum(phi*phi)
-        Eeph = np.sum ((gamma * m * w0**2 - g * sqrttwomw) * 2.0 * phi / sqrttwomw * ni)
-        Eeph += np.sum((gamma**2 * m*w0**2 / 2.0 - g * gamma * sqrttwomw) * ni)
-        
-        result = numpy.exp(-Eeph)
-        return result'''
 
     def bosonic_local_energy(self, walker):
 

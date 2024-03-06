@@ -103,15 +103,26 @@ class SingleDetWalker(Walker):
         """
         nup = self.nup
         ndown = self.ndown
+	
+        #print("inv_olp psi:", trial.psi)
+        #print("inv_olp phi:", self.phi)
+        #print(trial.psi[:,:nup])
+        #print(self.phi[:,:nup])
+        #print((trial.psi[:,:nup].conj()).T.dot(self.phi[:,:nup]))
+        #ginv = ((trial.psi[:,:nup].conj()).T.dot(self.phi[:,:nup]))
+        #print(numpy.real(ginv))
+        #inv0 = numpy.float64(numpy.real((trial.psi[:,:nup].conj()).T.dot(self.phi[:,:nup])))
 
         self.inv_ovlp[0] = (
-            scipy.linalg.inv((trial.psi[:,:nup].conj()).T.dot(self.phi[:,:nup]))
+            numpy.linalg.inv(numpy.real((trial.psi[:,:nup].conj()).T.dot(self.phi[:,:nup])))
         )
+
+        #inv1 = numpy.float64(numpy.real((trial.psi[:,nup:].conj()).T.dot(self.phi[:,nup:])))
 
         self.inv_ovlp[1] = numpy.zeros(self.inv_ovlp[0].shape)
         if (ndown>0):
             self.inv_ovlp[1] = (
-                scipy.linalg.inv((trial.psi[:,nup:].conj()).T.dot(self.phi[:,nup:]))
+                numpy.linalg.inv(numpy.real((trial.psi[:,nup:].conj()).T.dot(self.phi[:,nup:])))
             )
 
     def update_inverse_overlap(self, trial, vtup, vtdown, i):

@@ -1,3 +1,4 @@
+
 import cmath
 import copy
 import numpy
@@ -88,7 +89,7 @@ class HirschDMC(object):
         
         else:
             if verbose:
-                print("# Charge decomposition is used")
+               print("# Charge decomposition is used")
             
             self.gamma = arccosh(numpy.exp(-0.5*qmc.dt*Ueff))
 
@@ -317,6 +318,9 @@ class HirschDMC(object):
 
         phiold = trial.value(walker)
 
+        #print("phi:", walker.phi)
+        #print("psi:", trial.psi)
+
         #Drift+diffusion
         driftold = (dt / system.m) * trial.gradient(walker)
 
@@ -416,26 +420,36 @@ class HirschDMC(object):
         trial : :class:`pauxy.trial_wavefunctioin.Trial`
             Trial wavefunction object.
         """
+
         if (self.symmetric_trotter):
-            #if abs(walker.weight.real) > 0:
-                #self.boson_importance_sampling(walker, system, trial, self.dt/2.)
+            if abs(walker.weight.real) > 0:
+                self.boson_importance_sampling(walker, system, trial, self.dt/2.)
+                #print("propogation1")
             if abs(walker.weight) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
+                #print("propogation2")
             if abs(walker.weight) > 0:
                 self.two_body(walker, system, trial) # hard-coded to do self.dt
+                #print("propogation3")
             if abs(walker.weight.real) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
-            #if abs(walker.weight.real) > 0:
-                #self.boson_importance_sampling(walker, system, trial, self.dt/2.)
+                #print("propogation4")
+            if abs(walker.weight.real) > 0:
+                self.boson_importance_sampling(walker, system, trial, self.dt/2.)
+                #print("propogation5")
         else:
             if abs(walker.weight) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
+                #print("propogation1")
             if abs(walker.weight) > 0:
                 self.two_body(walker, system, trial) # hard-coded to do self.dt
+                #print("propogation2")
             if abs(walker.weight.real) > 0:
                 self.kinetic_importance_sampling(walker, system, trial, self.dt/2.)
-            #if abs(walker.weight.real) > 0:
-                #self.boson_importance_sampling(walker, system, trial, self.dt)
+                #print("propogation3")
+            if abs(walker.weight.real) > 0:
+                self.boson_importance_sampling(walker, system, trial, self.dt)
+                #print("propogation4")
         
     def boson_free_propagation(self, walker, system, trial, eshift):
         #Change weight
